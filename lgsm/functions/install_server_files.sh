@@ -22,8 +22,7 @@ fn_install_server_files(){
 	elif [ "${gamename}" == "Call of Duty: World at War" ]; then
 		remote_fileurl="http://files.gameservermanagers.com/CallOfDutyWorldAtWar/codwaw-lnxded-1.7-full.tar.bz2"; local_filedir="${tmpdir}"; local_filename="codwaw-lnxded-1.7-full.tar.bz2"; chmodx="nochmodx" run="norun"; force="noforce"; md5="0489697ff3bf678c109bfb377d1b7895"
 	elif [ "${shortname}" == "etl" ]; then
-		remote_fileurl="http://files.gameservermanagers.com/WolfensteinEnemyTerritory/etlegacy-v2.75-i386.tar.gz"; local_filedir="${tmpdir}"; local_filename="enemy-territory.260b.tar.bz2"; chmodx="nochmodx" run="norun"; force="noforce"; md5="f833f514bfcdd46b42c111f83350c5a7"
-
+		remote_fileurl="http://files.gameservermanagers.com/WolfensteinEnemyTerritory/etlegacy-v2.75-i386.tar.gz"; local_filedir="${tmpdir}"; local_filename="etlegacy-v2.75-i386.tar.gz"; chmodx="nochmodx" run="norun"; force="noforce"; md5="d8fb0edb1b4d5f6a454eae41009d7d94"
 	elif [ "${gamename}" == "GoldenEye: Source" ]; then
 		remote_fileurl="http://files.gameservermanagers.com/GoldenEyeSource/GoldenEye_Source_v5.0.6_full_server.tar.bz2"; local_filedir="${tmpdir}"; local_filename="GoldenEye_Source_v5.0.6_full_server.tar.bz2"; chmodx="nochmodx" run="norun"; force="noforce"; md5="c45c16293096706e8b5e2cd64a6f2931"
 	elif [ "${gamename}" == "Quake 2" ]; then
