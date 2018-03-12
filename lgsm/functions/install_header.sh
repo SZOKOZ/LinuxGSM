@@ -1,12 +1,12 @@
 #!/bin/bash
-# LGSM install_header.sh function
+# LinuxGSM install_header.sh function
 # Author: Daniel Gibbs
 # Website: https://gameservermanagers.com
 # Description: Prints installation header.
 
 local commandname="INSTALL"
 local commandaction="Install"
-local function_selfname="$(basename $(readlink -f "${BASH_SOURCE[0]}"))"
+local function_selfname="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 clear
 echo "================================="

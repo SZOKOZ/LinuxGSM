@@ -1,12 +1,12 @@
 #!/bin/bash
-# LGSM command_debug.sh function
+# LinuxGSM command_debug.sh function
 # Author: Daniel Gibbs
 # Website: https://gameservermanagers.com
 # Description: Runs the server without tmux and directly from the terminal.
 
 local commandname="DEBUG"
 local commandaction="Debug"
-local function_selfname="$(basename $(readlink -f "${BASH_SOURCE[0]}"))"
+local function_selfname="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 # Trap to remove lockfile on quit.
 fn_lockfile_trap(){
@@ -29,7 +29,7 @@ fn_print_header
 echo -e "${blue}Distro:\t${default}${distroname}"
 echo -e "${blue}Arch:\t${default}${arch}"
 echo -e "${blue}Kernel:\t${default}${kernel}"
-echo -e "${blue}Hostname:\t${default}$HOSTNAME"
+echo -e "${blue}Hostname:\t${default}${HOSTNAME}"
 echo -e "${blue}tmux:\t${default}${tmuxv}"
 echo -e "${blue}Avg Load:\t${default}${load}"
 echo -e "${blue}Free Memory:\t${default}${physmemfree}"
@@ -52,6 +52,12 @@ if [ -n "${glibcrequired}" ]; then
 fi
 # Server ip
 echo -e "${blue}Server IP:\t${default}${ip}:${port}"
+# External server ip
+if [ -n "${extip}" ]; then
+	if [ "${ip}" != "${extip}" ]; then
+		echo -e "${blue}Internet IP:\t${default}${extip}:${port}"
+	fi
+fi
 # Server password
 if [ -n "${serverpassword}" ]; then
 	echo -e "${blue}Server password:\t${default}${serverpassword}"
@@ -68,14 +74,9 @@ echo -e "Use for identifying server issues only!"
 echo -e "Press CTRL+c to drop out of debug mode."
 fn_print_warning_nl "If ${servicename} is already running it will be stopped."
 echo ""
-while true; do
-	read -e -i "y" -p "Continue? [Y/n]" yn
-	case $yn in
-	[Yy]* ) break;;
-	[Nn]* ) echo Exiting; return;;
-	* ) echo "Please answer yes or no.";;
-esac
-done
+if ! fn_prompt_yn "Continue?" Y; then
+	echo Exiting; return
+fi
 
 fn_print_info_nl "Stopping any running servers"
 fn_script_log_info "Stopping any running servers"
@@ -106,6 +107,9 @@ else
 	${executable} ${parms}
 fi
 
+fn_print_dots "Stopping debug"
+sleep 1
+fn_print_ok_nl "Stopping debug"
 # remove trap.
 trap - INT
 core_exit.sh

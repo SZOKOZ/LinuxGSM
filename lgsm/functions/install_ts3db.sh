@@ -1,5 +1,5 @@
 #!/bin/bash
-# LGSM install_ts3db.sh function
+# LinuxGSM install_ts3db.sh function
 # Author: Daniel Gibbs
 # Contributor: PhilPhonic
 # Website: https://gameservermanagers.com
@@ -7,14 +7,14 @@
 
 local commandname="INSTALL"
 local commandaction="Install"
-local function_selfname="$(basename $(readlink -f "${BASH_SOURCE[0]}"))"
+local function_selfname="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 fn_install_ts3db_mariadb(){
 	echo ""
 	echo "checking if libmariadb2 is installed"
 	echo "================================="
 	sleep 1
-	ldd ${filesdir}/libts3db_mariadb.so | grep "libmariadb.so.2 => not found"
+	ldd ${serverfiles}/libts3db_mariadb.so | grep "libmariadb.so.2 => not found"
 	if [ $? -eq 0 ]; then
 		echo "libmariadb2 not installed. Please install it first."
 		echo "exiting..."
@@ -48,17 +48,19 @@ fn_install_ts3db_mariadb(){
 
 if [ -z "${autoinstall}" ]; then
 	echo ""
-	while true; do
-		read -e -i "n" -p "Do you want to use MariaDB/MySQL instead of sqlite (Database Server including user and database already has to be set up!)? [y/N]" yn
-		case $yn in
-		[Yy]* ) fn_install_ts3db_mariadb && break;;
-		[Nn]* ) break;;
-		* ) echo "Please answer yes or no.";;
-		esac
-	done
+	if fn_prompt_yn "Do you want to use MariaDB/MySQL instead of sqlite (Database Server including user and database already has to be set up!)?" N; then
+		fn_install_ts3db_mariadb
+	fi
 else
 fn_print_warning_nl "./${selfname} auto-install is uses sqlite. For MariaDB/MySQL use ./${selfname} install"
 fi
+
+## License
+fn_script_log "Accepting ts3server license:  ${executabledir}/LICENSE"
+fn_print_info_nl "Accepting TeamSpeak license:"
+fn_print_info_nl " * ${executabledir}/LICENSE"
+sleep 3
+touch "${executabledir}/.ts3server_license_accepted"
 
 ## Get privilege key
 echo ""

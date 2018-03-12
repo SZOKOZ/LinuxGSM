@@ -1,5 +1,5 @@
 #!/bin/bash
-# LGSM install_factorio_save.sh function
+# LinuxGSM install_factorio_save.sh function
 # Author: Kristian Polso
 # Website: https://gameservermanagers.com
 # Description: Creates the initial save file for Factorio
@@ -12,4 +12,4 @@ echo "Creating initial Factorio savefile"
 echo "================================="
 sleep 1
 check_glibc.sh
-"${executabledir}"/factorio --create ${filesdir}/save1
+"${executabledir}"/factorio --create ${serverfiles}/save1

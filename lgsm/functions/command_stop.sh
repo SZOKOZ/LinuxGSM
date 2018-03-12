@@ -1,5 +1,5 @@
 #!/bin/bash
-# LGSM command_stop.sh function
+# LinuxGSM command_stop.sh function
 # Author: Daniel Gibbs
 # Contributors: UltimateByte
 # Website: https://gameservermanagers.com
@@ -7,77 +7,92 @@
 
 local commandname="STOP"
 local commandaction="Stopping"
-local function_selfname="$(basename $(readlink -f "${BASH_SOURCE[0]}"))"
+local function_selfname="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
 
-# Attempts graceful of source using rcon 'quit' command.
-fn_stop_graceful_source(){
-	fn_print_dots "Graceful: rcon quit"
-	fn_script_log_info "Graceful: rcon quit"
+# Attempts graceful shutdown by sending the 'CTRL+c'.
+fn_stop_graceful_ctrlc(){
+	fn_print_dots "Graceful: CTRL+c"
+	fn_script_log_info "Graceful: CTRL+c"
 	# sends quit
-	tmux send -t "${servicename}" quit ENTER > /dev/null 2>&1
+	tmux send-keys C-c -t "${servicename}" > /dev/null 2>&1
 	# waits up to 30 seconds giving the server time to shutdown gracefuly
 	for seconds in {1..30}; do
 		check_status.sh
 		if [ "${status}" == "0" ]; then
-			fn_print_ok "Graceful: rcon quit: ${seconds}: "
+			fn_print_ok "Graceful: CTRL+c: ${seconds}: "
 			fn_print_ok_eol_nl
-			fn_script_log_pass "Graceful: rcon quit: OK: ${seconds} seconds"
+			fn_script_log_pass "Graceful: CTRL+c: OK: ${seconds} seconds"
 			break
 		fi
 		sleep 1
-		fn_print_dots "Graceful: rcon quit: ${seconds}"
+		fn_print_dots "Graceful: CTRL+c: ${seconds}"
 	done
 	check_status.sh
 	if [ "${status}" != "0" ]; then
-		fn_print_error "Graceful: rcon quit: "
+		fn_print_error "Graceful: CTRL+c: "
 		fn_print_fail_eol_nl
-		fn_script_log_error "Graceful: rcon quit: FAIL"
+		fn_script_log_error "Graceful: CTRL+c: FAIL"
+	fi
+	sleep 1
+	fn_stop_tmux
+}
+
+# Attempts graceful shutdown by sending a specified command.
+# Usage: fn_stop_graceful_cmd "console_command" "timeout_in_seconds"
+#  e.g.: fn_stop_graceful_cmd "quit" "30"
+fn_stop_graceful_cmd(){
+	fn_print_dots "Graceful: sending \"${1}\""
+	fn_script_log_info "Graceful: sending \"${1}\""
+	# sends specific stop command
+	tmux send -t "${servicename}" ${1} ENTER > /dev/null 2>&1
+	# waits up to given seconds giving the server time to shutdown gracefully
+	for ((seconds=1; seconds<=${2}; seconds++)); do
+		check_status.sh
+		if [ "${status}" == "0" ]; then
+			fn_print_ok "Graceful: sending \"${1}\": ${seconds}: "
+			fn_print_ok_eol_nl
+			fn_script_log_pass "Graceful: sending \"${1}\": OK: ${seconds} seconds"
+			break
+		fi
+		sleep 1
+		fn_print_dots "Graceful: sending \"${1}\": ${seconds}"
+	done
+	check_status.sh
+	if [ "${status}" != "0" ]; then
+		fn_print_error "Graceful: sending \"${1}\": "
+		fn_print_fail_eol_nl
+		fn_script_log_error "Graceful: sending \"${1}\": FAIL"
 	fi
 	sleep 1
 	fn_stop_tmux
 }
 
 # Attempts graceful of goldsource using rcon 'quit' command.
-# Goldsource 'quit' command restarts rather than shutsdown
+# Goldsource 'quit' command restarts rather than shutdown
 # this function will only wait 3 seconds then force a tmux shutdown.
 # preventing the server from coming back online.
 fn_stop_graceful_goldsource(){
-	fn_print_dots "Graceful: rcon quit"
-	fn_script_log_info "Graceful: rcon quit"
+	fn_print_dots "Graceful: sending \"quit\""
+	fn_script_log_info "Graceful: sending \"quit\""
 	# sends quit
 	tmux send -t "${servicename}" quit ENTER > /dev/null 2>&1
 	# waits 3 seconds as goldsource servers restart with the quit command
 	for seconds in {1..3}; do
 		sleep 1
-		fn_print_dots "Graceful: rcon quit: ${seconds}"
+		fn_print_dots "Graceful: sending \"quit\": ${seconds}"
 	done
-	fn_print_ok "Graceful: rcon quit: ${seconds}: "
+	fn_print_ok "Graceful: sending \"quit\": ${seconds}: "
 	fn_print_ok_eol_nl
-	fn_script_log_pass "Graceful: rcon quit: OK: ${seconds} seconds"
+	fn_script_log_pass "Graceful: sending \"quit\": OK: ${seconds} seconds"
 	sleep 1
 	fn_stop_tmux
 }
-
-fn_stop_graceful_factorio(){
-	fn_print_dots "Graceful: console CTRL+c"
-	fn_script_log_info "Graceful: console CTRL+c"
-	# sends quit
-	tmux send-keys C-c -t "${servicename}" > /dev/null 2>&1
-	# waits 3 seconds as goldsource servers restart with the quit command
-	for seconds in {1..3}; do
-		sleep 1
-		fn_print_dots "Graceful: console CTRL+c: ${seconds}"
-	done
-	fn_print_ok "Graceful: console CTRL+c: ${seconds}: "
-	fn_print_ok_eol_nl
-	fn_script_log_pass "Graceful: console CTRL+c: OK: ${seconds} seconds"
-	sleep 1
-	fn_stop_tmux
-}
-
 
 # Attempts graceful of 7 Days To Die using telnet.
 fn_stop_telnet_sdtd(){
+	if [ -z "${telnetpass}" ]; then
+		telnetpass="NOTSET"
+	fi
 	sdtd_telnet_shutdown=$( expect -c '
 	proc abort {} {
 		puts "Timeout or EOF\n"
@@ -103,7 +118,7 @@ fn_stop_graceful_sdtd(){
 	sleep 1
 	if [ "${telnetenabled}" == "false" ]; then
 		fn_print_info_nl "Graceful: telnet: DISABLED: Enable in ${servercfg}"
-	elif [ "$(command -v expect)" ]||[ "$(which expect >/dev/null 2>&1)" ]; then
+	elif [ "$(command -v expect 2>/dev/null)" ]||[ "$(which expect >/dev/null 2>&1)" ]; then
 		# Tries to shutdown with both localhost and server IP.
 		for telnetip in 127.0.0.1 ${ip}; do
 			fn_print_dots "Graceful: telnet: ${telnetip}"
@@ -135,7 +150,7 @@ fn_stop_graceful_sdtd(){
 					break
 				fi
 				sleep 1
-				fn_print_dots "Graceful: rcon quit: ${seconds}"
+				fn_print_dots "Graceful: telnet: ${seconds}"
 			done
 		# If telnet failed will go straight to tmux shutdown.
 		# If cannot shutdown correctly world save may be lost
@@ -148,10 +163,10 @@ fn_stop_graceful_sdtd(){
 				fn_print_error_nl "Graceful: telnet: Unknown error"
 				fn_script_log_error "Graceful: telnet: Unknown error"
 			fi
-			echo -en "\n" | tee -a "${scriptlog}"
-			echo -en "Telnet output:" | tee -a "${scriptlog}"
-			echo -en "\n ${sdtd_telnet_shutdown}" | tee -a "${scriptlog}"
-			echo -en "\n\n" | tee -a "${scriptlog}"
+			echo -en "\n" | tee -a "${lgsmlog}"
+			echo -en "Telnet output:" | tee -a "${lgsmlog}"
+			echo -en "\n ${sdtd_telnet_shutdown}" | tee -a "${lgsmlog}"
+			echo -en "\n\n" | tee -a "${lgsmlog}"
 		fi
 	else
 		fn_print_warn "Graceful: telnet: expect not installed: "
@@ -162,96 +177,75 @@ fn_stop_graceful_sdtd(){
 	fn_stop_tmux
 }
 
-# Attempts graceful of source using rcon 'stop' command.
-fn_stop_graceful_minecraft(){
-	fn_print_dots "Graceful: console stop"
-	fn_script_log_info "Graceful: console stop"
-	# sends quit
-	tmux send -t "${servicename}" stop ENTER > /dev/null 2>&1
-	# waits up to 30 seconds giving the server time to shutdown gracefuly
-	for seconds in {1..30}; do
-		check_status.sh
-		if [ "${status}" == "0" ]; then
-			fn_print_ok "Graceful: console stop: ${seconds}: "
-			fn_print_ok_eol_nl
-			fn_script_log_pass "Graceful: console stop: OK: ${seconds} seconds"
-			break
-		fi
-		sleep 1
-		fn_print_dots "Graceful: console stop: ${seconds}"
-	done
-	check_status.sh
-	if [ "${status}" != "0" ]; then
-		fn_print_error "Graceful: console stop: "
-		fn_print_fail_eol_nl
-		fn_script_log_error "Graceful: console stop: FAIL"
-	fi
-	sleep 1
-	fn_stop_tmux
-}
-
 fn_stop_graceful_select(){
 	if [ "${gamename}" == "7 Days To Die" ]; then
 		fn_stop_graceful_sdtd
-	elif [ "${gamename}" == "Factorio" ]; then
-		fn_stop_graceful_factorio
-	elif [ "${engine}" == "source" ]; then
-		fn_stop_graceful_source
+	elif [ "${engine}" == "Spark" ]; then
+		fn_stop_graceful_cmd "q" 30
+	elif [ "${gamename}" == "Terraria" ]; then
+		fn_stop_graceful_cmd "exit" 30
+	elif [ "${gamename}" == "Minecraft" ]; then
+		fn_stop_graceful_cmd "stop" 30
+	elif [ "${gamename}" == "Multi Theft Auto" ]; then
+		# we need a long wait time here as resources are stopped individually and process their own shutdowns
+		fn_stop_graceful_cmd "quit" 120
 	elif [ "${engine}" == "goldsource" ]; then
 		fn_stop_graceful_goldsource
-	elif [ "${engine}" == "lwjgl2" ]; then
-		fn_stop_graceful_minecraft
+	elif [ "${engine}" == "avalanche2.0" ]||[ "${engine}" == "avalanche3.0" ]||[ "${gamename}" == "Factorio" ]||[ "${engine}" == "unity3d" ]||[ "${engine}" == "unreal4" ]||[ "${engine}" == "unreal3" ]||[ "${engine}" == "unreal2" ]||[ "${engine}" == "unreal" ]||[ "${gamename}" == "Mumble" ]; then
+		fn_stop_graceful_ctrlc
+	elif  [ "${engine}" == "source" ]||[ "${engine}" == "quake" ]||[ "${engine}" == "idtech2" ]||[ "${engine}" == "idtech3" ]||[ "${engine}" == "idtech3_ql" ]||[ "${engine}" == "Just Cause 2" ]||[ "${engine}" == "projectzomboid" ]; then
+		fn_stop_graceful_cmd "quit" 30
 	else
 		fn_stop_tmux
 	fi
 }
 
 fn_stop_ark(){
-		maxpiditer=15 # The maximum number of times to check if the ark pid has closed gracefully.
-		info_config.sh
-		if [ -z "${queryport}" ]; then
-				fn_print_warn "No queryport found using info_config.sh"
-				fn_script_log_warn "No queryport found using info_config.sh"
-				userconfigfile="${filesdir}"
-				userconfigfile+="/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
-				queryport=$(grep ^QueryPort= ${userconfigfile} | cut -d= -f2 | sed "s/[^[:digit:].*].*//g")
-		fi
-		if [ -z "${queryport}" ]; then
-				fn_print_warn "No queryport found in the GameUsersettings.ini file"
-				fn_script_log_warn "No queryport found in the GameUsersettings.ini file"
-				return
-		fi
+	maxpiditer=15 # The maximum number of times to check if the ark pid has closed gracefully.
+	info_config.sh
+	if [ -z "${queryport}" ]; then
+		fn_print_warn "No queryport found using info_config.sh"
+		fn_script_log_warn "No queryport found using info_config.sh"
+		userconfigfile="${serverfiles}"
+		userconfigfile+="/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
+		queryport=$(grep ^QueryPort= ${userconfigfile} | cut -d= -f2 | sed "s/[^[:digit:].*].*//g")
+	fi
+	if [ -z "${queryport}" ]; then
+		fn_print_warn "No queryport found in the GameUsersettings.ini file"
+		fn_script_log_warn "No queryport found in the GameUsersettings.ini file"
+		return
+	fi
 
-		if [[ ${#queryport} -gt 0 ]] ; then
-				for (( pidcheck=0 ; pidcheck < ${maxpiditer} ; pidcheck++ )) ; do
-						pid=$(netstat -nap 2>/dev/null | grep ^udp[[:space:]] |\
-								grep :${queryport}[[:space:]] | rev | awk '{print $1}' |\
-								rev | cut -d\/ -f1)
-						#
-						# check for a valid pid
-						pid=${pid//[!0-9]/}
-						let pid+=0 # turns an empty string into a valid number, '0',
-						# and a valid numeric pid remains unchanged.
-						if [[ ${pid} -gt 1 && $pid -le $(cat /proc/sys/kernel/pid_max) ]] ; then
-						fn_print_dots "Process still bound. Awaiting graceful exit: ${pidcheck}"
-								sleep 1
-						else
-								break # Our job is done here
-						fi # end if for pid range check
-				done
-				if [[ ${pidcheck} -eq ${maxpiditer} ]] ; then
-						# The process doesn't want to close after 20 seconds.
-						# kill it hard.
-						fn_print_error "Terminating reluctant Ark process: ${pid}"
-						kill -9 $pid
-				fi
-		fi # end if for port check
+	if [ "${#queryport}" -gt 0 ] ; then
+		for (( pidcheck=0 ; pidcheck < ${maxpiditer} ; pidcheck++ )) ; do
+			pid=$(netstat -nap 2>/dev/null | grep ^udp[[:space:]] |\
+				grep :${queryport}[[:space:]] | rev | awk '{print $1}' |\
+				rev | cut -d\/ -f1)
+			#
+			# check for a valid pid
+			pid=${pid//[!0-9]/}
+			let pid+=0 # turns an empty string into a valid number, '0',
+			# and a valid numeric pid remains unchanged.
+			if [ "${pid}" -gt 1 ]&&[ "${pid}" -le $(cat /proc/sys/kernel/pid_max) ]; then
+			fn_print_dots "Process still bound. Awaiting graceful exit: ${pidcheck}"
+				sleep 1
+			else
+				break # Our job is done here
+			fi # end if for pid range check
+		done
+		if [[ ${pidcheck} -eq ${maxpiditer} ]] ; then
+			# The process doesn't want to close after 20 seconds.
+			# kill it hard.
+			fn_print_error "Terminating reluctant Ark process: ${pid}"
+			kill -9 ${pid}
+		fi
+	fi # end if for port check
 } # end of fn_stop_ark
 
 fn_stop_teamspeak3(){
 	fn_print_dots "${servername}"
-	sleep 1
-	${filesdir}/ts3server_startscript.sh stop > /dev/null 2>&1
+	sleep 0.5
+	"${serverfiles}"/ts3server_startscript.sh stop > /dev/null 2>&1
 	check_status.sh
 	if [ "${status}" == "0" ]; then
 		# Remove lockfile
@@ -264,29 +258,10 @@ fn_stop_teamspeak3(){
 	fi
 }
 
-fn_stop_mumble(){
-	# Get needed port info
-	info_config.sh
-	fn_print_dots "Stopping ${servername}"
-	mumblepid=$(netstat -nap  2>/dev/null | grep udp | grep "${port}" | grep murmur | awk '{ print $6 }' | awk -F'/' '{ print $1 }')
-	kill ${mumblepid}
-	sleep 1
-	check_status.sh
-	if [ "${status}" == "0" ]; then
-		# Remove lockfile
-		rm -f "${rootdir}/${lockselfname}"
-		fn_stop_tmux
-		fn_script_log_pass "Stopped ${servername}"
-	else
-		fn_print_fail_nl "Unable to stop ${servername}"
-		fn_script_log_error "Unable to stop ${servername}"
-	fi
-}
-
 fn_stop_tmux(){
 	fn_print_dots "${servername}"
 	fn_script_log_info "tmux kill-session: ${servername}"
-	sleep 1
+	sleep 0.5
 	# Kill tmux session
 	tmux kill-session -t "${servicename}" > /dev/null 2>&1
 	sleep 0.5
@@ -295,11 +270,10 @@ fn_stop_tmux(){
 		# Remove lockfile
 		rm -f "${rootdir}/${lockselfname}"
 		# ARK doesn't clean up immediately after tmux is killed.
-				# Make certain the ports are cleared before continuing.
-				if [ "${gamename}" == "ARK: Survival Evolved" ]; then
-						fn_stop_ark
-						echo -en "\n"
-				fi
+		# Make certain the ports are cleared before continuing.
+		if [ "${gamename}" == "ARK: Survival Evolved" ]; then
+			fn_stop_ark
+		fi
 		fn_print_ok_nl "${servername}"
 		fn_script_log_pass "Stopped ${servername}"
 	else
@@ -318,13 +292,6 @@ fn_stop_pre_check(){
 		else
 			fn_stop_teamspeak3
 		fi
-	elif [ "${gamename}" == "Mumble" ]; then
-		if [ "${status}" == "0" ]; then
-			fn_print_info_nl "${servername} is already stopped"
-			fn_script_log_error "${servername} is already stopped"
-		else
-		fn_stop_mumble
-		fi
 	else
 		if [ "${status}" == "0" ]; then
 			fn_print_info_nl "${servername} is already stopped"
@@ -336,7 +303,7 @@ fn_stop_pre_check(){
 }
 
 fn_print_dots "${servername}"
-sleep 1
+sleep 0.5
 check.sh
 info_config.sh
 fn_stop_pre_check

@@ -1,12 +1,12 @@
 #!/bin/bash
-# LGSM install_complete.sh function
+# LinuxGSM install_complete.sh function
 # Author: Daniel Gibbs
 # Website: https://gameservermanagers.com
 # Description: Prints installation completion message and hints.
 
 local commandname="INSTALL"
 local commandaction="Install"
-local function_selfname="$(basename $(readlink -f "${BASH_SOURCE[0]}"))"
+local function_selfname="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 echo "================================="
 echo "Install Complete!"
