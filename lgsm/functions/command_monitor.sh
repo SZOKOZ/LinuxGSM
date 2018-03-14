@@ -109,7 +109,10 @@ sleep 1
 check.sh
 logs.sh
 info_config.sh
-
+# If IP is not defined, then query on localhost
+if [ "${ip}" == "0.0.0.0" ]||[ -z "${ip}" ]; then
+	ip="127.0.0.1"
+fi
 fn_monitor_check_lockfile
 fn_monitor_check_update
 fn_monitor_msg_checking
