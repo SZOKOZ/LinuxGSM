@@ -111,7 +111,7 @@ logs.sh
 info_config.sh
 # If IP is not defined, then query on localhost
 if [ "${ip}" == "0.0.0.0" ]||[ -z "${ip}" ]; then
-	ip="127.0.0.1"
+	ip=$(${ipcommand} -o -4 addr|awk '{print $4}'|grep -oe '\([0-9]\{1,3\}\.\?\)\{4\}'|grep -v 127.0.0|shuf -n 1)
 fi
 fn_monitor_check_lockfile
 fn_monitor_check_update
