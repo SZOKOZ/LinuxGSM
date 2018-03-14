@@ -32,34 +32,33 @@ if [ "${gamename}" != "TeamSpeak 3" ]&&[ "${gamename}" != "Mumble" ]&&[ "${travi
 				fn_print_information "Specify the IP you want to bind within ${servercfg}.\n"
 				echo -en "	* location: ${servercfgfullpath}\n"
 				echo -en "\n"
-				echo -en "Set ${ipinconfigvar} to one of the following:\n"
-				fn_script_log_fatal "Multiple IP addresses found."
-				fn_script_log_fatal "Specify the IP you want to bind within: ${servercfgfullpath}."
+				echo -en "You should set ${ipinconfigvar} to one of the following:\n"
+				fn_script_log_warn "Multiple IP addresses found."
+				fn_script_log_warn "You should specify the IP you want to bind within: ${servercfgfullpath}."
 			# IP is set within LinuxGSM config
 			else
-				fn_print_information_nl "Specify the IP you want to bind within a LinuxGSM config file.\n"
+				fn_print_information_nl "You should specify the IP you want to bind within a LinuxGSM config file.\n"
 				echo -en "	* location: ${configdirserver}\n"
 				echo -en "\n"
 				echo -en "Set ip=\"0.0.0.0\" to one of the following:\n"
-				fn_script_log_fatal "Multiple IP addresses found."
+				fn_script_log_warn "Multiple IP addresses found."
 				if [ "${legacymode}" == "1" ]; then
-					fn_script_log_fatal "Specify the IP you want to bind within the ${selfname} script."
+					fn_script_log_warn "You should specify the IP you want to bind within the ${selfname} script."
 				else
-					fn_script_log_fatal "Specify the IP you want to bind within: ${configdirserver}."
+					fn_script_log_warn "You should specify the IP you want to bind within: ${configdirserver}."
 				fi
 			fi
 			echo -en "${getip}\n"
 			echo -en "\n"
 			echo -en "https://gameservermanagers.com/network-interfaces\n"
 			echo -en ""
-			fn_script_log_fatal "https://gameservermanagers.com/network-interfaces\n"
-			core_exit.sh
+			fn_script_log_warn "https://gameservermanagers.com/network-interfaces\n"
 		# Single interface
 		elif [ "${ipsetinconfig}" == "1" ]; then
 			fn_print_fail "Check IP: IP address not set in game config."
 			sleep 1
 			echo -en "\n"
-			fn_print_information "Specify the IP you want to bind within ${servercfg}.\n"
+			fn_print_information "You might want to specify the IP you want to bind within ${servercfg}.\n"
 			echo -en "	* location: ${servercfgfullpath}\n"
 			echo -en "\n"
 			echo -en "Set ${ipinconfigvar} to the following:\n"
@@ -67,10 +66,9 @@ if [ "${gamename}" != "TeamSpeak 3" ]&&[ "${gamename}" != "Mumble" ]&&[ "${travi
 			echo -en "\n"
 			echo -en "https://gameservermanagers.com/network-interfaces\n"
 			echo -en ""
-			fn_script_log_fatal "IP address not set in game config."
-			fn_script_log_fatal "Specify the IP you want to bind within: ${servercfgfullpath}."
-			fn_script_log_fatal "https://gameservermanagers.com/network-interfaces\n"
-			core_exit.sh
+			fn_script_log_warn "IP address not set in game config."
+			fn_script_log_warn "You might want to specify the IP you want to bind within: ${servercfgfullpath}."
+			fn_script_log_warn "https://gameservermanagers.com/network-interfaces\n"
 		else
 			ip="${getip}"
 		fi
